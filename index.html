@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="img/favicon-16x16.png" type="image/x-icon">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+    <title>Mentor Lino</title>
+    
+    <style>
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #1c2630;
+            color: #e0e0e0;
+            font-family: 'Roboto', sans-serif;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden; 
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
+            width: 100%;
+            padding: 25px 20px;
+            background-color: #093f31; 
+            color: #e0e0e0;
+        }
+
+        header img {
+            width: 100%;
+            max-width: 100px; 
+            margin-left: 20px;
+        }
+
+        h2 {
+            margin: 20px 0;
+            font-size: 24px;
+        }
+
+        form {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 200px;
+            background-color: #1c2630;
+            color: #fff;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ffffff;
+            color: #1c2630;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        table {
+            width: 90%;
+            max-width: 1000px;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table, th, td {
+            border: 1px solid #ffffff85;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #093f31;
+        }
+
+        td {
+            background-color: #1c2630;
+        }
+
+        .remove-btn {
+            background-color: #dc3545;
+            color: #fff;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+        }
+
+        .remove-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="img/logo.png" alt="Logo">
+    </header>
+
+    <h2>Controle de Mensalidades</h2>
+    
+    <form id="subscriptionForm">
+        <input type="text" id="name" placeholder="Nome" required>
+        <input type="text" id="contact" placeholder="Contato" required>
+        <button type="submit">Adicionar</button>
+    </form>
+    
+    <table id="subscriptionTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Contato</th>
+                <th>Data de Início</th>
+                <th>Data de Vencimento</th>
+                <th>Status</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSubscriptions();
+            checkExpiration();
+        });
+
+        document.getElementById('subscriptionForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const contact = document.getElementById('contact').value;
+            const startDate = new Date();
+            const expirationDate = new Date();
+            expirationDate.setDate(startDate.getDate() + 30);
+
+            // Gerar ID único
+            const id = 'ID-' + Date.now();
+
+            const subscription = {
+                id: id,
+                name: name,
+                contact: contact,
+                startDate: startDate,
+                expirationDate: expirationDate
+            };
+
+            addSubscription(subscription);
+            saveSubscription(subscription);
+
+            document.getElementById('name').value = '';
+            document.getElementById('contact').value = '';
+        });
+
+        function addSubscription(subscription) {
+            const table = document.getElementById('subscriptionTable').getElementsByTagName('tbody')[0];
+            const newRow = table.insertRow();
+
+            const idCell = newRow.insertCell(0);
+            const nameCell = newRow.insertCell(1);
+            const contactCell = newRow.insertCell(2);
+            const startDateCell = newRow.insertCell(3);
+            const expirationDateCell = newRow.insertCell(4);
+            const statusCell = newRow.insertCell(5);
+            const actionCell = newRow.insertCell(6);
+
+            idCell.textContent = subscription.id;
+            nameCell.textContent = subscription.name;
+            contactCell.textContent = subscription.contact;
+            startDateCell.textContent = formatDate(new Date(subscription.startDate));
+            expirationDateCell.textContent = formatDate(new Date(subscription.expirationDate));
+
+            updateStatus(new Date(subscription.expirationDate), statusCell, subscription.name);
+
+            // Botão de remover
+            const removeButton = document.createElement('button');
+            removeButton.classList.add('remove-btn');
+            removeButton.textContent = 'Remover';
+            removeButton.addEventListener('click', function() {
+                removeSubscription(subscription.id);
+                table.deleteRow(newRow.rowIndex - 1);
+            });
+            actionCell.appendChild(removeButton);
+        }
+
+        function formatDate(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0'); 
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function updateStatus(expirationDate, statusCell, name) {
+            const today = new Date();
+            const timeDiff = expirationDate.getTime() - today.getTime();
+            const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            
+            if (today > expirationDate) {
+                statusCell.textContent = 'Vencido';
+                statusCell.style.color = 'red';
+            } else if (daysLeft === 1) {
+                statusCell.textContent = 'Vencendo Amanhã';
+                statusCell.style.color = 'orange';
+                alert(`Atenção: A mensalidade de ${name} vence amanhã!`);
+            } else {
+                statusCell.textContent = 'Ativo';
+                statusCell.style.color = 'green';
+            }
+        }
+
+        function saveSubscription(subscription) {
+            const subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
+            subscriptions.push(subscription);
+            localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+        }
+
+        function loadSubscriptions() {
+            const subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
+            subscriptions.forEach(subscription => {
+                addSubscription(subscription);
+            });
+        }
+
+        function removeSubscription(id) {
+            let subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
+            subscriptions = subscriptions.filter(subscription => subscription.id !== id);
+            localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+        }
+
+        function checkExpiration() {
+            const subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
+            const today = new Date();
+
+            subscriptions.forEach(subscription => {
+                const expirationDate = new Date(subscription.expirationDate);
+                const timeDiff = expirationDate.getTime() - today.getTime();
+                const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+                if (daysLeft === 1) {
+                    alert(`Atenção: A mensalidade de ${subscription.name} vence amanhã!`);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
