@@ -109,6 +109,37 @@
         .remove-btn:hover {
             background-color: #c82333;
         }
+
+        .renew-btn {
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+        }
+
+        .renew-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* Mensagem de confirmação */
+        .message {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #28a745;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: opacity 0.5s;
+            opacity: 1;
+            z-index: 1000;
+        }
+
+        .hidden {
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
@@ -151,6 +182,13 @@
             
             const name = document.getElementById('name').value;
             const contact = document.getElementById('contact').value;
+
+            // Validação simples
+            if (!validateInput(name, contact)) {
+                showMessage('Por favor, insira um nome e contato válidos.');
+                return;
+            }
+
             const startDate = new Date();
             const expirationDate = new Date();
             expirationDate.setDate(startDate.getDate() + 30);
@@ -168,10 +206,18 @@
 
             addSubscription(subscription);
             saveSubscription(subscription);
+            showMessage('Assinatura adicionada com sucesso!');
 
             document.getElementById('name').value = '';
             document.getElementById('contact').value = '';
         });
+
+        function validateInput(name, contact) {
+            // Validação simples de entrada
+            const nameValid = /^[a-zA-ZÀ-ÿ\s]+$/.test(name); // Apenas letras e espaços
+            const contactValid = /^[0-9\s-]+$/.test(contact); // Apenas números, espaços e hifens
+            return nameValid && contactValid;
+        }
 
         function addSubscription(subscription) {
             const table = document.getElementById('subscriptionTable').getElementsByTagName('tbody')[0];
@@ -192,6 +238,16 @@
             expirationDateCell.textContent = formatDate(new Date(subscription.expirationDate));
 
             updateStatus(new Date(subscription.expirationDate), statusCell, subscription.name);
+
+            // Botão de renovar
+            const renewButton = document.createElement('button');
+            renewButton.classList.add('renew-btn');
+            renewButton.textContent = 'Renovar';
+            renewButton.addEventListener('click', function() {
+                renewSubscription(subscription.id);
+                table.deleteRow(newRow.rowIndex - 1);
+            });
+            actionCell.appendChild(renewButton);
 
             // Botão de remover
             const removeButton = document.createElement('button');
@@ -246,6 +302,19 @@
             let subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
             subscriptions = subscriptions.filter(subscription => subscription.id !== id);
             localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+            showMessage('Assinatura removida com sucesso!');
+        }
+
+        function renewSubscription(id) {
+            let subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
+            const subscription = subscriptions.find(subscription => subscription.id === id);
+            if (subscription) {
+                subscription.expirationDate = new Date(subscription.expirationDate);
+                subscription.expirationDate.setDate(subscription.expirationDate.getDate() + 30);
+                localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+                addSubscription(subscription); // Adiciona novamente a linha com a nova data de vencimento
+                showMessage('Assinatura renovada com sucesso!');
+            }
         }
 
         function checkExpiration() {
@@ -261,6 +330,20 @@
                     alert(`Atenção: A mensalidade de ${subscription.name} vence amanhã!`);
                 }
             });
+        }
+
+        function showMessage(message) {
+            const messageBox = document.createElement('div');
+            messageBox.textContent = message;
+            messageBox.classList.add('message');
+            document.body.appendChild(messageBox);
+            
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+                setTimeout(() => {
+                    document.body.removeChild(messageBox);
+                }, 500);
+            }, 3000);
         }
     </script>
 </body>
