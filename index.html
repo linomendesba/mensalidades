@@ -49,14 +49,16 @@
             text-align: center;
         }
 
+        /* Remover a largura fixa do campo de contato e permitir expansão */
         input[type="text"] {
             padding: 10px;
             margin: 5px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            width: 200px;
+            min-width: 200px; /* Alterado de width para min-width */
             background-color: #1c2630;
             color: #fff;
+            white-space: nowrap; /* Evitar quebra de linha no conteúdo */
         }
 
         button {
@@ -93,8 +95,10 @@
             background-color: #093f31;
         }
 
+        /* Evitar quebra de linha nas células da tabela */
         td {
             background-color: #1c2630;
+            white-space: nowrap; /* Evitar quebra de linha */
         }
 
         .remove-btn {
@@ -183,9 +187,9 @@
             const name = document.getElementById('name').value;
             const contact = document.getElementById('contact').value;
 
-            // Validação simples
-            if (!validateInput(name, contact)) {
-                showMessage('Por favor, insira um nome e contato válidos.');
+            // Validação simples (removida a validação de contato)
+            if (!validateInput(name)) {
+                showMessage('Por favor, insira um nome válido.');
                 return;
             }
 
@@ -212,11 +216,10 @@
             document.getElementById('contact').value = '';
         });
 
-        function validateInput(name, contact) {
-            // Validação simples de entrada
+        function validateInput(name) {
+            // Validação simples de entrada apenas para o nome
             const nameValid = /^[a-zA-ZÀ-ÿ\s]+$/.test(name); // Apenas letras e espaços
-            const contactValid = /^[0-9\s-]+$/.test(contact); // Apenas números, espaços e hifens
-            return nameValid && contactValid;
+            return nameValid;
         }
 
         function addSubscription(subscription) {
@@ -293,57 +296,48 @@
 
         function loadSubscriptions() {
             const subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
-            subscriptions.forEach(subscription => {
-                addSubscription(subscription);
-            });
+            subscriptions.forEach(addSubscription);
         }
 
         function removeSubscription(id) {
             let subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
-            subscriptions = subscriptions.filter(subscription => subscription.id !== id);
+            subscriptions = subscriptions.filter(sub => sub.id !== id);
             localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
             showMessage('Assinatura removida com sucesso!');
         }
 
         function renewSubscription(id) {
             let subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
-            const subscription = subscriptions.find(subscription => subscription.id === id);
+            const subscription = subscriptions.find(sub => sub.id === id);
             if (subscription) {
-                subscription.expirationDate = new Date(subscription.expirationDate);
-                subscription.expirationDate.setDate(subscription.expirationDate.getDate() + 30);
+                const newExpirationDate = new Date();
+                newExpirationDate.setDate(newExpirationDate.getDate() + 30);
+                subscription.expirationDate = newExpirationDate;
                 localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
-                addSubscription(subscription); // Adiciona novamente a linha com a nova data de vencimento
                 showMessage('Assinatura renovada com sucesso!');
             }
         }
 
         function checkExpiration() {
             const subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
-            const today = new Date();
-
-            subscriptions.forEach(subscription => {
-                const expirationDate = new Date(subscription.expirationDate);
-                const timeDiff = expirationDate.getTime() - today.getTime();
-                const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-                if (daysLeft === 1) {
-                    alert(`Atenção: A mensalidade de ${subscription.name} vence amanhã!`);
+            subscriptions.forEach(sub => {
+                const expirationDate = new Date(sub.expirationDate);
+                if (expirationDate <= new Date()) {
+                    alert(`A mensalidade de ${sub.name} está vencida!`);
                 }
             });
         }
 
         function showMessage(message) {
-            const messageBox = document.createElement('div');
-            messageBox.textContent = message;
-            messageBox.classList.add('message');
-            document.body.appendChild(messageBox);
-            
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.textContent = message;
+            document.body.appendChild(messageDiv);
+
             setTimeout(() => {
-                messageBox.classList.add('hidden');
-                setTimeout(() => {
-                    document.body.removeChild(messageBox);
-                }, 500);
-            }, 3000);
+                messageDiv.classList.add('hidden');
+                setTimeout(() => document.body.removeChild(messageDiv), 500);
+            }, 2000);
         }
     </script>
 </body>
